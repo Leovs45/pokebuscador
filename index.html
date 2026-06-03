@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokébuscador</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #f0f2f5;
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #1a1a2e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 16px;
+      gap: 32px;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #ffcb05;
+      -webkit-text-stroke: 3px #2a75bb;
+      paint-order: stroke fill;
+      text-shadow:
+        4px 4px 0 #3c5aa6,
+        5px 5px 0 #3c5aa6;
+    }
+
+    header p {
+      color: #666;
+      margin-top: 4px;
+      font-size: 0.95rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .search-row {
+      display: flex;
+      width: 100%;
+      gap: 8px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #dde;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      background: white;
+    }
+
+    input[type="text"]:focus {
+      border-color: #2a75bb;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: #ffcb05;
+      color: #3c5aa6;
+      white-space: nowrap;
+      border: 2px solid #2a75bb;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: #f0be00; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      color: #aaa;
+      font-size: 0.85rem;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #dde;
+    }
+
+    .daily-section {
+      width: 100%;
+      background: white;
+      border: 2px solid #dde;
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .daily-section .label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .daily-section .date {
+      display: none;
+    }
+
+    .btn-daily {
+      background: #ffcb05;
+      color: #3c5aa6;
+      white-space: nowrap;
+      flex-shrink: 0;
+      border: 2px solid #2a75bb;
+    }
+
+    .btn-daily:hover:not(:disabled) { background: #f0be00; }
+
+    .btn-primary:active:not(:disabled),
+    .btn-daily:active:not(:disabled) {
+      background: #2a75bb;
+      color: #ffcb05;
+      border-color: #ffcb05;
+    }
+
+    /* Pokemon card */
+    .card {
+      display: none;
+      width: 100%;
+      max-width: 420px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .card.visible { display: block; }
+
+    .card-header {
+      padding: 28px 28px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .card-header .name {
+      font-size: 1.8rem;
+      font-weight: 800;
+      text-transform: capitalize;
+      letter-spacing: -0.5px;
+    }
+
+    .card-header .number {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #bbb;
+      padding-top: 6px;
+    }
+
+    .types {
+      display: flex;
+      gap: 8px;
+      padding: 10px 28px 0;
+    }
+
+    .type-badge {
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: white;
+      text-transform: capitalize;
+      letter-spacing: 0.3px;
+    }
+
+    .sprite-container {
+      display: flex;
+      justify-content: center;
+      padding: 16px 28px;
+    }
+
+    .sprite-container img {
+      width: 200px;
+      height: 200px;
+      object-fit: contain;
+      image-rendering: auto;
+    }
+
+    .stats {
+      padding: 0 28px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: 90px 32px 1fr;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+    }
+
+    .stat-name {
+      color: #888;
+      font-weight: 500;
+      text-align: right;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.4px;
+    }
+
+    .stat-value {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .stat-bar-bg {
+      height: 6px;
+      background: #eee;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .stat-bar {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+
+    /* error */
+    .error-msg {
+      display: none;
+      color: #cc3333;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .error-msg.visible { display: block; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Pokébuscador</h1>
+    <p>Para tus pokénecesidades</p>
+  </header>
+
+  <div class="controls">
+
+    <div class="search-row">
+      <input type="text" id="search-input" placeholder="Nombre o número..." />
+      <button class="btn btn-primary" id="search-btn" onclick="handleSearch()">Buscar</button>
+    </div>
+
+    <div class="divider">o con espíritu de aventura...</div>
+
+    <div class="daily-section">
+      <div>
+        <div class="label">Descubrí tu Pokémon del día</div>
+        <div class="date" id="today-label"></div>
+      </div>
+      <button class="btn btn-daily" id="daily-btn" onclick="handleDaily()">Revelar</button>
+    </div>
+
+  </div>
+
+  <p class="error-msg" id="error-msg"></p>
+
+  <div class="card" id="card">
+    <div class="card-header">
+      <span class="name" id="poke-name"></span>
+      <span class="number" id="poke-number"></span>
+    </div>
+    <div class="types" id="poke-types"></div>
+    <div class="sprite-container">
+      <img id="poke-sprite" alt="pokemon sprite" />
+    </div>
+    <div class="stats" id="poke-stats"></div>
+  </div>
+
+  <script>
+    const TOTAL_POKEMON = 1025;
+
+    function getUserSeed() {
+      let seed = localStorage.getItem('pokerpeta_user_seed');
+      if (!seed) {
+        seed = Math.random().toString(36).slice(2);
+        localStorage.setItem('pokerpeta_user_seed', seed);
+      }
+      return seed;
+    }
+
+    // Crear el seed al cargar, no esperar al primer click
+    getUserSeed();
+
+    const TYPE_COLORS = {
+      normal: '#9099A1', fire: '#FF4422', water: '#3399FF',
+      electric: '#FFCC00', grass: '#33BB55', ice: '#66CCFF',
+      fighting: '#BB5544', poison: '#AA5599', ground: '#DDBB55',
+      flying: '#8899FF', psychic: '#FF5599', bug: '#AABB22',
+      rock: '#BBAA66', ghost: '#6666BB', dragon: '#7766EE',
+      dark: '#775544', steel: '#AAAABB', fairy: '#EE99EE',
+    };
+
+    const STAT_NAMES = {
+      hp: 'HP', attack: 'Ataque', defense: 'Defensa',
+      'special-attack': 'Sp. Ataque', 'special-defense': 'Sp. Defensa', speed: 'Velocidad',
+    };
+
+    const STAT_COLORS = {
+      hp: '#FF5959', attack: '#F5AC78', defense: '#FAE078',
+      'special-attack': '#9DB7F5', 'special-defense': '#A7DB8D', speed: '#FA92B2',
+    };
+
+    // Muestra la fecha de hoy en el label
+    const today = new Date();
+    document.getElementById('today-label').textContent = today.toLocaleDateString('es-AR', {
+      weekday: 'long', day: 'numeric', month: 'long'
+    });
+
+    // Hash simple de la fecha para generar el ID del día de forma determinística
+    function getDailyId() {
+      const dateStr = today.toISOString().split('T')[0]; // "2026-06-03"
+      const seed = getUserSeed();
+      const cached = JSON.parse(localStorage.getItem('pokerpeta_daily') || 'null');
+
+      if (cached?.date === dateStr && cached?.seed === seed) return cached.id;
+
+      const input = dateStr + seed;
+      let hash = 0;
+      for (const char of input) {
+        hash = (hash * 31 + char.charCodeAt(0)) & 0xffffffff;
+      }
+      const id = (Math.abs(hash) % TOTAL_POKEMON) + 1;
+      localStorage.setItem('pokerpeta_daily', JSON.stringify({ date: dateStr, seed, id }));
+      return id;
+    }
+
+    async function fetchPokemon(nameOrId) {
+      const key = `pokerpeta_cache_${String(nameOrId).toLowerCase()}`;
+      const cached = localStorage.getItem(key);
+      if (cached) return JSON.parse(cached);
+
+      const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${nameOrId}`);
+      if (!res.ok) throw new Error(`Pokemon "${nameOrId}" no encontrado`);
+
+      const data = await res.json();
+      localStorage.setItem(key, JSON.stringify(data));
+      return data;
+    }
+
+    function renderPokemon(data) {
+      document.getElementById('error-msg').classList.remove('visible');
+
+      document.getElementById('poke-name').textContent = data.name;
+      document.getElementById('poke-number').textContent =
+        `#${String(data.id).padStart(3, '0')}`;
+
+      // tipos
+      const typesEl = document.getElementById('poke-types');
+      typesEl.innerHTML = data.types.map(t => {
+        const color = TYPE_COLORS[t.type.name] || '#999';
+        return `<span class="type-badge" style="background:${color}">${t.type.name}</span>`;
+      }).join('');
+
+      // sprite (official artwork, fallback al sprite clásico)
+      const sprite =
+        data.sprites?.other?.['official-artwork']?.front_default ||
+        data.sprites?.front_default;
+      document.getElementById('poke-sprite').src = sprite;
+
+      // stats
+      const statsEl = document.getElementById('poke-stats');
+      statsEl.innerHTML = data.stats.map(s => {
+        const name = STAT_NAMES[s.stat.name] || s.stat.name;
+        const color = STAT_COLORS[s.stat.name] || '#aaa';
+        const pct = Math.round((s.base_stat / 255) * 100);
+        return `
+          <div class="stat-row">
+            <span class="stat-name">${name}</span>
+            <span class="stat-value">${s.base_stat}</span>
+            <div class="stat-bar-bg">
+              <div class="stat-bar" style="width:${pct}%; background:${color}"></div>
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('card').classList.add('visible');
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = msg;
+      el.classList.add('visible');
+      document.getElementById('card').classList.remove('visible');
+    }
+
+    function setLoading(loading) {
+      document.getElementById('search-btn').disabled = loading;
+      document.getElementById('daily-btn').disabled = loading;
+      document.getElementById('search-input').disabled = loading;
+    }
+
+    async function handleSearch() {
+      const query = document.getElementById('search-input').value.trim().toLowerCase();
+      if (!query) return;
+
+      setLoading(true);
+      try {
+        const data = await fetchPokemon(query);
+        renderPokemon(data);
+      } catch (e) {
+        showError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function handleDaily() {
+      setLoading(true);
+      try {
+        const id = getDailyId();
+        const data = await fetchPokemon(id);
+        renderPokemon(data);
+      } catch (e) {
+        showError('No se pudo cargar el pokémon del día.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Enter en el input dispara la búsqueda
+    document.getElementById('search-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleSearch();
+    });
+  </script>
+
+</body>
+</html>
